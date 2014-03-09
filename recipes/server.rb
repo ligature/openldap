@@ -20,8 +20,15 @@ include_recipe "openldap::client"
 
 case node['platform']
 when "ubuntu"
-  package "db4.8-util" do
-    action :upgrade
+  case /\A([[:alnum:]])*/.match(node["platform_version"])[0]
+  when "10"
+    package "db4.8-util" do 
+      action :upgrade
+    end
+  else
+    package "db-util" do 
+      action :upgrade
+    end
   end
 
   directory node['openldap']['preseed_dir'] do
@@ -43,6 +50,7 @@ when "ubuntu"
     response_file "slapd.seed"
     action :upgrade
   end
+
 when "redhat","centos"
   package "db4-utils" do
     action :upgrade
@@ -51,11 +59,22 @@ when "redhat","centos"
   package "openldap-servers" do
     action :upgrade
   end
-else
-  package "db4.2-util" do
+
+when "debian"
+  case /\A([[:alnum:]])*/.match(node["platform_version"])[0]
+  when "6"
+    package "db4.8-util" do 
+      action :upgrade
+    end
+  else
+    package "db-util" do 
+      action :upgrade
+    end
+  end
+  package "slapd" do 
     action :upgrade
   end
-
+else
   package "slapd" do
     action :upgrade
   end
