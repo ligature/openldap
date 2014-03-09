@@ -77,39 +77,35 @@ if (node['platform'] == "ubuntu" || node['platform'] == "debian")
     group "root"
     mode 00644
   end
+  if (node['platform'] == "debian")
+    directory "#{node['openldap']['dir']}/slapd.conf" do 
+      recursive true
+      action :delete
+    end
+  end
 end
 
-if (node['platform'] == 'debian')
-  template "#{node['openldap']['dir']}/slapd.conf" do
-    source "slapd.conf.erb"
-    mode 00640
-    owner node['openldap']['user']
-    group node['openldap']['group']
-    notifies :restart, "service[slapd]"
-  end
-else
-  directory "#{node['openldap']['dir']}/slapd.d" do
-    recursive true
-    owner node['openldap']['user']
-    group node['openldap']['group']
-    action :create
-  end
+directory "#{node['openldap']['dir']}/slapd.d" do
+  recursive true
+  owner node['openldap']['user']
+  group node['openldap']['group']
+  action :create
+end
 
-  execute "slapd-config-convert" do
-    command "slaptest -f #{node['openldap']['dir']}/slapd.conf -F #{node['openldap']['dir']}/slapd.d/"
-    user node['openldap']['user']
-    action :nothing
-    notifies :start, "service[slapd]", :immediately
-  end
+execute "slapd-config-convert" do
+  command "slaptest -f #{node['openldap']['dir']}/slapd.conf -F #{node['openldap']['dir']}/slapd.d/"
+  user node['openldap']['user']
+  action :nothing
+  notifies :start, "service[slapd]", :immediately
+end
 
-  template "#{node['openldap']['dir']}/slapd.conf" do
-    source "slapd.conf.erb"
-    mode 00640
-    owner node['openldap']['user']
-    group node['openldap']['group']
-    notifies :stop, "service[slapd]", :immediately
-    notifies :run, "execute[slapd-config-convert]"
-  end
+template "#{node['openldap']['dir']}/slapd.conf" do
+  source "slapd.conf.erb"
+  mode 00640
+  owner node['openldap']['user']
+  group node['openldap']['group']
+  notifies :stop, "service[slapd]", :immediately
+  notifies :run, "execute[slapd-config-convert]"
 end
 
 service "slapd" do
