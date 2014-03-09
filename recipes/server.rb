@@ -70,18 +70,24 @@ if node['openldap']['tls_enabled'] && node['openldap']['manage_ssl']
   end
 end
 
-service "slapd" do
-  action [:enable, :start]
-end
-
-if (node['platform'] == "ubuntu")
+if (node['platform'] == "ubuntu" || node['platform'] == "debian")
   template "/etc/default/slapd" do
     source "default_slapd.erb"
     owner "root"
     group "root"
     mode 00644
   end
+end
 
+if (node['platform'] == 'debian')
+  template "#{node['openldap']['dir']}/slapd.conf" do
+    source "slapd.conf.erb"
+    mode 00640
+    owner node['openldap']['user']
+    group node['openldap']['group']
+    notifies :restart, "service[slapd]"
+  end
+else
   directory "#{node['openldap']['dir']}/slapd.d" do
     recursive true
     owner node['openldap']['user']
@@ -104,22 +110,8 @@ if (node['platform'] == "ubuntu")
     notifies :stop, "service[slapd]", :immediately
     notifies :run, "execute[slapd-config-convert]"
   end
-else
-  case node['platform']
-  when "debian","ubuntu"
-    template "/etc/default/slapd" do
-      source "default_slapd.erb"
-      owner "root"
-      group "root"
-      mode 00644
-    end
-  end
+end
 
-  template "#{node['openldap']['dir']}/slapd.conf" do
-    source "slapd.conf.erb"
-    mode 00640
-    owner node['openldap']['user']
-    group node['openldap']['group']
-    notifies :restart, "service[slapd]"
-  end
+service "slapd" do
+  action [:enable, :start]
 end
